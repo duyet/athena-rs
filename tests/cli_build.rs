@@ -1,11 +1,14 @@
 use assert_cmd::prelude::*; // Add methods on commands
 use predicates::prelude::*;
+use serial_test::serial;
+use std::env::set_current_dir;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command; // Run programs
-use tempfile::NamedTempFile;
+use tempfile::tempdir;
 
 #[test]
+#[serial]
 fn missing_arguments() {
     let mut cmd = Command::cargo_bin("athena").unwrap();
 
@@ -27,6 +30,7 @@ fn missing_arguments() {
 }
 
 #[test]
+#[serial]
 fn build_missing_file() {
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build").assert().failure();
@@ -49,13 +53,17 @@ fn build_missing_file() {
 /// $ athena build .
 /// stderr and stdout should empty
 #[test]
-fn build_on_empty_folder() {
+#[serial]
+fn build_on_empty_dir() {
     // create a temporary directory
-    let dir = tempfile::tempdir().unwrap();
+    let dir = tempdir().unwrap();
+
+    // Set working dir to tempdir
+    assert!(set_current_dir(&dir).is_ok());
 
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
-        .arg(dir.path())
+        .arg(".")
         .assert()
         .success()
         .stdout(predicate::str::is_empty())
@@ -67,24 +75,26 @@ fn build_on_empty_folder() {
 
 /// Create an empty folder <temp>.
 /// Create a index.sql file with content: SELECT 1
-/// $ athena build <temp>
+/// $ athena build .
 /// stdout should be: SELECT 1
 #[test]
+#[serial]
 fn should_works() {
     // create a temporary directory
-    let dir = tempfile::tempdir().unwrap();
+    let dir = tempdir().unwrap();
 
     // Create a file inside dir
     let file_path = dir.path().join("index.sql");
     let mut file = File::create(file_path).expect("could not create temp file");
     writeln!(file, "SELECT 1").expect("could not write to temp file");
 
+    // Set working dir to tempdir
+    assert!(set_current_dir(&dir).is_ok());
+
     // $ athena build <path>
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
-        .arg(dir.path())
-        .arg("--context")
-        .arg(dir.path())
+        .arg(".")
         .assert()
         .success()
         .stdout(predicate::str::contains("SELECT 1"));
@@ -98,21 +108,23 @@ fn should_works() {
 /// $ athena build ./////
 /// stdout should be: SELECT 1
 #[test]
+#[serial]
 fn should_works_with_trailing_slashs() {
     // create a temporary directory
-    let dir = tempfile::tempdir().unwrap();
+    let dir = tempdir().unwrap();
 
-    // Create a file inside dir
+    // Create a file inside tempdir
     let file_path = dir.path().join("index.sql");
     let mut file = File::create(file_path).expect("could not create temp file");
     writeln!(file, "SELECT 1").expect("could not write to temp file");
 
+    // Set working dir to tempdir
+    assert!(set_current_dir(&dir).is_ok());
+
     // $ athena build <path>////
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
-        .arg(&format!("{}/////", dir.path().to_str().unwrap()))
-        .arg("--context")
-        .arg(dir.path())
+        .arg("./////")
         .assert()
         .success()
         .stdout(predicate::str::contains("SELECT 1"));
@@ -126,14 +138,18 @@ fn should_works_with_trailing_slashs() {
 /// $ athena build .
 /// stdout should be: SELECT 1
 #[test]
+#[serial]
 fn does_not_contains_index_file() {
     // create a temporary directory
-    let dir = tempfile::tempdir().unwrap();
+    let dir = tempdir().unwrap();
 
     // Create a file inside dir
     let file_path = dir.path().join("not_index.sql");
     let mut file = File::create(file_path).expect("could not create temp file");
     writeln!(file, "SELECT 1").expect("could not write to temp file");
+
+    // Set working dir to tempdir
+    assert!(set_current_dir(&dir).is_ok());
 
     // $ athena build <path>
     // but the <path> doesn't contain index.sql file
@@ -154,16 +170,57 @@ fn does_not_contains_index_file() {
 /// $ athena build <path>
 /// stdout should be: SELECT 1
 #[test]
-fn should_works_with_a_file() {
-    // create a temporary file
-    let mut file = NamedTempFile::new().unwrap();
+#[serial]
+fn should_works_with_a_file_in_cwd() {
+    // create a temporary directory
+    let dir = tempdir().unwrap();
+
+    // Create a file inside tempdir
+    let file_path = dir.path().join("index.sql");
+    let mut file = File::create(file_path).expect("could not create temp file");
     writeln!(file, "SELECT 1").expect("could not write to temp file");
+
+    // Set working dir to tempdir
+    assert!(set_current_dir(&dir).is_ok());
+
+    let full_file_path = format!("{}/index.sql", dir.path().display());
 
     // $ athena build <file>
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
-        .arg(file.into_temp_path().to_str().unwrap())
+        .arg(full_file_path)
         .assert()
         .success()
         .stdout(predicate::str::contains("SELECT 1"));
+
+    // cleanup
+    dir.close().unwrap();
+}
+
+/// Create a random sql file with content: SELECT 1
+/// $ athena build <path>
+/// stdout should be: SELECT 1
+#[test]
+#[serial]
+fn should_works_with_a_file_at_any_cwd() {
+    // create a temporary directory
+    let dir = tempdir().unwrap();
+
+    // Create a file inside tempdir
+    let file_path = dir.path().join("index.sql");
+    let mut file = File::create(file_path).expect("could not create temp file");
+    writeln!(file, "SELECT 1").expect("could not write to temp file");
+
+    let full_file_path = format!("{}/index.sql", dir.path().display());
+
+    // $ athena build <file>
+    let mut cmd = Command::cargo_bin("athena").unwrap();
+    cmd.arg("build")
+        .arg(full_file_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("SELECT 1"));
+
+    // cleanup
+    dir.close().unwrap();
 }

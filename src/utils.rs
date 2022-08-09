@@ -1,6 +1,8 @@
 use anyhow::{Context, Result};
-use std::fs::canonicalize;
-use std::path::{Path, PathBuf};
+use std::{
+    fs::canonicalize,
+    path::{Path, PathBuf},
+};
 use tera::Tera;
 use walkdir::WalkDir;
 
@@ -22,7 +24,8 @@ pub fn get_full_path_str(path: &Path) -> Result<String> {
 }
 
 /// Get Tera template, load the template from working dir
-pub fn get_tera(_target_dir: PathBuf, working_dir: PathBuf) -> Result<Tera> {
+pub fn get_tera(target_path: PathBuf, working_dir: PathBuf) -> Result<Tera> {
+    let is_dir = is_dir(&target_path);
     let working_dir_str = working_dir.to_str().expect("could not get working dir str");
     let prefix = format!("{}/", working_dir_str);
 
@@ -43,24 +46,43 @@ pub fn get_tera(_target_dir: PathBuf, working_dir: PathBuf) -> Result<Tera> {
         }
     }
 
+    if !is_dir {
+        let template_path = target_path.display().to_string();
+        let template_name = target_path.file_name().expect("could not get file name");
+        tera.add_template_file(template_path, template_name.to_str())?;
+    }
+
     Ok(tera)
+}
+
+/// Check if a directory
+/// Not sure why the .is_dir() is not works
+/// https://doc.rust-lang.org/std/path/struct.PathBuf.html#method.is_dir
+pub fn is_dir(path: &Path) -> bool {
+    path.read_dir().is_ok()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use predicates::prelude::*;
+    use std::env::current_dir;
+    use std::fs::create_dir_all;
     use std::path::Path;
     use tempfile::tempdir;
 
+    // No default working dir
     #[test]
-    fn test_get_current_working_dir() {
-        // No default working dir
+    fn test_get_current_working_dir_without_param() {
         assert_eq!(
             get_current_working_dir(None).unwrap(),
-            std::env::current_dir().unwrap()
+            current_dir().unwrap()
         );
+    }
 
+    // With default working dir
+    #[test]
+    fn test_get_current_working_dir_with_param() {
         let dir = tempdir().expect("could not create temp dir");
         let path_1 = dir.path();
         let path_2 = dir.path();
@@ -76,7 +98,7 @@ mod tests {
 
         // Create tempdir <temp>/dir for tests
         let path = dir.path().join("dir");
-        std::fs::create_dir_all(&path).expect("could not create dir");
+        create_dir_all(&path).expect("could not create dir");
 
         let test_path = dir.path().join("dir");
         let predicate_fn = predicate::str::contains(format!("{}/dir", dir_str));

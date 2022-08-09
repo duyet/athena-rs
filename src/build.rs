@@ -2,7 +2,7 @@ use anyhow::{bail, Context, Result};
 use log::debug;
 use std::{fs::File, io::Write, path::PathBuf};
 
-use crate::utils::{get_current_working_dir, get_full_path_str, get_tera};
+use crate::utils::{get_current_working_dir, get_full_path_str, get_tera, is_dir};
 
 #[derive(clap::Args, Debug, Clone)]
 pub struct Build {
@@ -46,21 +46,14 @@ pub fn call(args: Build) -> Result<()> {
 pub fn build(args: Build) -> Result<String> {
     let path = &args.file;
 
-    // Check if a directory
-    // Not sure why the .is_dir() is not works
-    // https://doc.rust-lang.org/std/path/struct.PathBuf.html#method.is_dir
-    let is_dir = if let Ok(mut dirs) = path.read_dir() {
-        dirs.next().is_some()
-    } else {
-        false
-    };
+    let is_dir = is_dir(path);
 
-    let (working_dir, path_str) = get_dirs(args.clone())?;
-
-    // If input path is empty folder, just return
+    // If input path is empty folder, just return empty
     if is_dir && path.read_dir()?.next().is_none() {
         return Ok("".to_string());
     }
+
+    let (working_dir, path_str) = get_dirs(args.clone())?;
 
     // If input path contains no *.sql files, error
     if is_dir
@@ -85,7 +78,7 @@ pub fn build(args: Build) -> Result<String> {
 
     // For debug
     let loaded_template: Vec<_> = tera.get_template_names().collect();
-    debug!("loaded templates: {:?}", loaded_template);
+    dbg!("loaded templates: {:?}", loaded_template);
 
     // TODO: Tera context
     let context = tera::Context::new();
@@ -93,8 +86,10 @@ pub fn build(args: Build) -> Result<String> {
     // Render the index.sql file if the target path is a folder
     let endpoint = if is_dir {
         format!("{}/index.sql", path_str)
+            .trim_start_matches('/')
+            .to_string()
     } else {
-        path_str.clone()
+        "index.sql".to_string()
     };
 
     let out = tera
