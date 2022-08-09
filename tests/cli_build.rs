@@ -156,8 +156,6 @@ fn does_not_contains_index_file() {
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
         .arg(dir.path())
-        .arg("--context")
-        .arg(dir.path())
         .assert()
         .failure()
         .stderr(predicate::str::contains("'index.sql' not found"));
@@ -201,7 +199,6 @@ fn should_works_with_a_file_in_cwd() {
 /// $ athena build <path>
 /// stdout should be: SELECT 1
 #[test]
-#[serial]
 fn should_works_with_a_file_at_any_cwd() {
     // create a temporary directory
     let dir = tempdir().unwrap();
@@ -222,5 +219,5 @@ fn should_works_with_a_file_at_any_cwd() {
         .stdout(predicate::str::contains("SELECT 1"));
 
     // cleanup
-    dir.close().unwrap();
+    dir.close().expect("could not clean up tempdir");
 }
