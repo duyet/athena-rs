@@ -1,6 +1,7 @@
 mod apply;
 mod build;
 mod cli;
+mod utils;
 
 use anyhow::Result;
 

@@ -1,9 +1,7 @@
 use assert_cmd::prelude::*; // Add methods on commands
-
 use predicates::prelude::*;
-use std::fs::{File};
-use std::io::{Write}; // Write to files
-
+use std::fs::File;
+use std::io::Write;
 use std::process::Command; // Run programs
 use tempfile::NamedTempFile;
 
@@ -67,9 +65,9 @@ fn build_on_empty_folder() {
     dir.close().unwrap();
 }
 
-/// Create an empty folder.
+/// Create an empty folder <temp>.
 /// Create a index.sql file with content: SELECT 1
-/// $ athena build .
+/// $ athena build <temp>
 /// stdout should be: SELECT 1
 #[test]
 fn should_works() {
@@ -84,6 +82,8 @@ fn should_works() {
     // $ athena build <path>
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
+        .arg(dir.path())
+        .arg("--context")
         .arg(dir.path())
         .assert()
         .success()
@@ -111,6 +111,8 @@ fn should_works_with_trailing_slashs() {
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
         .arg(&format!("{}/////", dir.path().to_str().unwrap()))
+        .arg("--context")
+        .arg(dir.path())
         .assert()
         .success()
         .stdout(predicate::str::contains("SELECT 1"));
@@ -137,6 +139,8 @@ fn does_not_contains_index_file() {
     // but the <path> doesn't contain index.sql file
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
+        .arg(dir.path())
+        .arg("--context")
         .arg(dir.path())
         .assert()
         .failure()
