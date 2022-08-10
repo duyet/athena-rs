@@ -55,6 +55,17 @@ pub fn get_tera(target_path: PathBuf, working_dir: PathBuf) -> Result<Tera> {
     Ok(tera)
 }
 
+pub fn pretty_print(input: &[u8]) {
+    bat::PrettyPrinter::new()
+        .header(true)
+        .grid(true)
+        .line_numbers(true)
+        .language("sql")
+        .input_from_bytes(input)
+        .print()
+        .unwrap();
+}
+
 /// Check if a directory
 /// Not sure why the .is_dir() is not works
 /// https://doc.rust-lang.org/std/path/struct.PathBuf.html#method.is_dir

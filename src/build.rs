@@ -2,7 +2,7 @@ use anyhow::{bail, Context, Result};
 use log::debug;
 use std::{fs::File, io::Write, path::PathBuf};
 
-use crate::utils::{get_current_working_dir, get_full_path_str, get_tera, is_dir};
+use crate::utils::{get_current_working_dir, get_full_path_str, get_tera, is_dir, pretty_print};
 
 #[derive(clap::Args, Debug, Clone)]
 pub struct Build {
@@ -10,15 +10,21 @@ pub struct Build {
     /// the root folder must contains the index.sql file
     #[clap(parse(from_os_str))]
     pub file: PathBuf,
+
     /// Output path. The file will be overwritten if is already exists
     #[clap(long, short, parse(from_os_str))]
     pub out: Option<PathBuf>,
+
     /// Change the context current working dir
     #[clap(long, short, parse(from_os_str))]
     pub context: Option<PathBuf>,
+
+    /// Raw output
+    #[clap(long, short)]
+    pub raw: Option<bool>,
 }
 
-pub fn call(args: Build) -> Result<()> {
+pub async fn call(args: Build) -> Result<()> {
     let (_, path_str) = get_dirs(args.clone())?;
 
     // Render SQL
@@ -36,7 +42,11 @@ pub fn call(args: Build) -> Result<()> {
             }
         }
         None => {
-            print!("{}", sql);
+            if args.raw.unwrap_or_default() {
+                print!("{}", sql);
+            } else {
+                pretty_print(sql.as_bytes());
+            }
         }
     }
 
@@ -78,7 +88,7 @@ pub fn build(args: Build) -> Result<String> {
 
     // For debug
     let loaded_template: Vec<_> = tera.get_template_names().collect();
-    dbg!("loaded templates: {:?}", loaded_template);
+    debug!("loaded templates: {:?}", loaded_template);
 
     // TODO: Tera context
     let context = tera::Context::new();
@@ -96,7 +106,7 @@ pub fn build(args: Build) -> Result<String> {
         .render(&endpoint, &context)
         .with_context(|| format!("failed to render from {}", path_str))?;
 
-    Ok(out)
+    Ok(out.trim().to_string())
 }
 
 fn get_dirs(args: Build) -> Result<(PathBuf, String)> {
