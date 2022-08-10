@@ -19,9 +19,9 @@ pub struct Build {
     #[clap(long, short, parse(from_os_str))]
     pub context: Option<PathBuf>,
 
-    /// Raw output
+    /// No pretty print for SQL
     #[clap(long, short)]
-    pub raw: Option<bool>,
+    pub no_pretty: Option<bool>,
 }
 
 pub async fn call(args: Build) -> Result<()> {
@@ -42,7 +42,7 @@ pub async fn call(args: Build) -> Result<()> {
             }
         }
         None => {
-            if args.raw.unwrap_or_default() {
+            if args.no_pretty.unwrap_or_default() {
                 print!("{}", sql);
             } else {
                 pretty_print(sql.as_bytes());

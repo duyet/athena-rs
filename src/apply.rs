@@ -41,7 +41,7 @@ pub struct Apply {
 
     /// No pretty print for SQL
     #[clap(long)]
-    pub raw: Option<bool>,
+    pub no_pretty: Option<bool>,
 }
 
 pub async fn call(args: Apply) -> Result<()> {
@@ -49,7 +49,7 @@ pub async fn call(args: Apply) -> Result<()> {
         file: args.file.clone(),
         out: None,
         context: args.context.clone(),
-        raw: None,
+        no_pretty: None,
     };
 
     let sql = crate::build::build(build_args)?;
@@ -95,7 +95,7 @@ fn get_result_configuration(args: Apply) -> ResultConfiguration {
 
 async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> Result<()> {
     let workgroup = args.workgroup.clone();
-    let result_configuration = get_result_configuration(args);
+    let result_configuration = get_result_configuration(args.clone());
 
     if query.is_none() {
         bail!("Empty query");
@@ -104,7 +104,11 @@ async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> 
     let query = query.unwrap();
 
     info!("Submitting: ");
-    pretty_print(query.as_bytes());
+    if args.no_pretty.unwrap_or_default() {
+        print!("{}", query);
+    } else {
+        pretty_print(query.as_bytes());
+    }
 
     let resp = client
         .start_query_execution()

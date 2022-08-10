@@ -95,6 +95,8 @@ fn should_works() {
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
         .arg(".")
+        .arg("--no-pretty")
+        .arg("true")
         .assert()
         .success()
         .stdout(predicate::str::contains("SELECT 1"));
@@ -125,6 +127,8 @@ fn should_works_with_trailing_slashs() {
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
         .arg("./////")
+        .arg("--no-pretty")
+        .arg("true")
         .assert()
         .success()
         .stdout(predicate::str::contains("SELECT 1"));
@@ -156,6 +160,8 @@ fn does_not_contains_index_file() {
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
         .arg(dir.path())
+        .arg("--no-pretty")
+        .arg("true")
         .assert()
         .failure()
         .stderr(predicate::str::contains("'index.sql' not found"));
@@ -187,6 +193,8 @@ fn should_works_with_a_file_in_cwd() {
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
         .arg(full_file_path)
+        .arg("--no-pretty")
+        .arg("true")
         .assert()
         .success()
         .stdout(predicate::str::contains("SELECT 1"));
@@ -214,6 +222,8 @@ fn should_works_with_a_file_at_any_cwd() {
     let mut cmd = Command::cargo_bin("athena").unwrap();
     cmd.arg("build")
         .arg(full_file_path)
+        .arg("--no-pretty")
+        .arg("true")
         .assert()
         .success()
         .stdout(predicate::str::contains("SELECT 1"));
