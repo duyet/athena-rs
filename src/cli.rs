@@ -14,9 +14,9 @@ pub struct Cli {
 
 #[derive(clap::Subcommand, Debug)]
 pub enum Command {
-    /// Build SQL from template
+    /// Build SQL from template path
     Build(Build),
-    /// Apply SQL to Athena
+    /// Build and execute SQL to Athena
     Apply(Apply),
 }
 

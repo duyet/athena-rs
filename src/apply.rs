@@ -1,7 +1,14 @@
-use anyhow::{bail, Result};
-use aws_sdk_athena::{model::ResultConfiguration, Client};
+use anyhow::{anyhow, bail, Context, Result};
+use aws_sdk_athena::{
+    model::{
+        QueryExecutionState::{self, *},
+        ResultConfiguration, ResultSet,
+    },
+    output::GetQueryExecutionOutput,
+    Client,
+};
 use log::{error, info};
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 use tokio::time::{sleep, Duration};
 
 use crate::utils::pretty_print;
@@ -22,20 +29,24 @@ pub struct Apply {
     pub dry_run: Option<bool>,
 
     /// AWS Profile
+    /// Set this option via environment variable: export AWS_PROFILE=default
     #[clap(global = true, long, short)]
     pub profile: Option<String>,
 
     /// AWS Region
     #[clap(global = true, long, short)]
+    /// Set this option via environment variable: export AWS_DEFAULT_REGION=us-east-1
     pub region: Option<String>,
 
     /// AWS Athena Workgroup
+    /// Set this option via environment variable: export AWS_WORKGROUP=primary
     #[clap(global = true, long, short)]
     pub workgroup: Option<String>,
 
     /// AWS Athena output location
     /// The location in Amazon S3 where your query results are stored
     /// such as `s3://path/to/query/bucket/`
+    /// Set this option via environment variable: export AWS_OUTPUT_LOCATION=s3://bucket/
     #[clap(global = true, long, short)]
     pub output_location: Option<String>,
 
@@ -88,8 +99,12 @@ pub async fn call(args: Apply) -> Result<()> {
 }
 
 fn get_result_configuration(args: Apply) -> ResultConfiguration {
+    let output_location = args
+        .output_location
+        .or_else(|| env::var("AWS_OUTPUT_LOCATION").ok());
+
     ResultConfiguration::builder()
-        .set_output_location(args.output_location)
+        .set_output_location(output_location)
         .build()
 }
 
@@ -119,6 +134,7 @@ async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> 
         .await?;
 
     let query_execution_id = resp.query_execution_id().unwrap_or_default();
+    info!("Query execution id: {}", &query_execution_id);
 
     loop {
         let resp = client
@@ -127,15 +143,8 @@ async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> 
             .send()
             .await?;
 
-        let status = resp
-            .query_execution()
-            .unwrap()
-            .status()
-            .unwrap()
-            .state()
-            .unwrap();
+        let status = status(&resp).unwrap();
 
-        use aws_sdk_athena::model::QueryExecutionState::*;
         match status {
             Queued | Running => {
                 sleep(Duration::from_secs(5)).await;
@@ -143,26 +152,59 @@ async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> 
             }
             Cancelled | Failed => {
                 error!("State: {:?}", status);
+
+                match get_query_result(&client, query_execution_id.to_string()).await {
+                    Ok(result) => info!("Result: {:?}", result),
+                    Err(e) => error!("Result error: {:?}", e),
+                }
+
                 break;
             }
             _ => {
-                let total_execution_time_in_millis = resp
-                    .query_execution()
-                    .unwrap()
-                    .statistics()
-                    .unwrap()
-                    .total_execution_time_in_millis()
-                    .unwrap();
-
+                let millis = total_execution_time(&resp).unwrap();
                 info!("State: {:?}", status);
-                info!(
-                    "Total execution time: {} millis",
-                    total_execution_time_in_millis
-                );
+                info!("Total execution time: {} millis", millis);
+
+                match get_query_result(&client, query_execution_id.to_string()).await {
+                    Ok(result) => info!("Result: {:?}", result),
+                    Err(e) => error!("Result error: {:?}", e),
+                }
+
                 break;
             }
         }
     }
 
     Ok(())
+}
+
+fn status(resp: &GetQueryExecutionOutput) -> Option<&QueryExecutionState> {
+    resp.query_execution().unwrap().status().unwrap().state()
+}
+
+fn total_execution_time(resp: &GetQueryExecutionOutput) -> Option<i64> {
+    resp.query_execution()
+        .unwrap()
+        .statistics()
+        .unwrap()
+        .total_execution_time_in_millis()
+}
+
+async fn get_query_result(client: &Client, query_execution_id: String) -> Result<ResultSet> {
+    let resp = client
+        .get_query_results()
+        .set_query_execution_id(Some(query_execution_id.clone()))
+        .send()
+        .await
+        .with_context(|| {
+            format!(
+                "could not get query results for query id {}",
+                query_execution_id
+            )
+        })?;
+
+    Ok(resp
+        .result_set()
+        .ok_or_else(|| anyhow!("could not get query result"))?
+        .clone())
 }
