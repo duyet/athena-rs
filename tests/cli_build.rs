@@ -1,4 +1,5 @@
 use assert_cmd::prelude::*; // Add methods on commands
+use indoc::indoc;
 use predicates::prelude::*;
 use serial_test::serial;
 use std::env::set_current_dir;
@@ -79,7 +80,7 @@ fn build_on_empty_dir() {
 /// stdout should be: SELECT 1
 #[test]
 #[serial]
-fn should_works() {
+fn test_render_simple_file_should_works() {
     // create a temporary directory
     let dir = tempdir().unwrap();
 
@@ -230,4 +231,86 @@ fn should_works_with_a_file_at_any_cwd() {
 
     // cleanup
     dir.close().expect("could not clean up tempdir");
+}
+
+#[test]
+#[serial]
+fn test_render_variables() {
+    let template = indoc! { r#"
+        {% set env = "production" %}
+
+        THIS IS {{ env }}
+    "# };
+    let expected = "THIS IS production";
+
+    // create a temporary directory
+    let dir = tempdir().unwrap();
+
+    // Create a file inside tempdir
+    let file_path = dir.path().join("index.sql");
+    let mut file = File::create(file_path).expect("could not create temp file");
+
+    writeln!(file, "{}", &template).expect("could not write to temp file");
+
+    // Set working dir to tempdir
+    assert!(set_current_dir(&dir).is_ok());
+
+    let full_file_path = format!("{}/index.sql", dir.path().display());
+
+    // $ athena build <file>
+    let mut cmd = Command::cargo_bin("athena").unwrap();
+    cmd.arg("build")
+        .arg(full_file_path)
+        .arg("--no-pretty")
+        .arg("true")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(expected));
+
+    // cleanup
+    dir.close().unwrap();
+}
+
+#[test]
+#[serial]
+fn test_render_include_sub_template_file() {
+    let template_table = indoc! { r#"
+        SELECT * FROM {{ env }}
+    "# };
+    let template_index = indoc! { r#"
+        {% set env = "production" %}
+        {% include "table.sql" %}
+    "# };
+    let expected = "SELECT * FROM production";
+
+    // create a temporary directory
+    let dir = tempdir().unwrap();
+
+    // Create a table.sql file
+    let file_path = dir.path().join("table.sql");
+    let mut file = File::create(file_path).expect("could not create temp file");
+    writeln!(file, "{}", &template_table).expect("could not write to temp file");
+
+    // Create a index.sql file
+    let file_path = dir.path().join("index.sql");
+    let mut file = File::create(file_path).expect("could not create temp file");
+    writeln!(file, "{}", &template_index).expect("could not write to temp file");
+
+    // Set working dir to tempdir
+    assert!(set_current_dir(&dir).is_ok());
+
+    let file_path = format!("{}", dir.path().display());
+
+    // $ athena build <file>
+    let mut cmd = Command::cargo_bin("athena").unwrap();
+    cmd.arg("build")
+        .arg(file_path)
+        .arg("--no-pretty")
+        .arg("true")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(expected));
+
+    // cleanup
+    dir.close().unwrap();
 }
