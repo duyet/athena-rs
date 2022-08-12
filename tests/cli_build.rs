@@ -314,3 +314,55 @@ fn test_render_include_sub_template_file() {
     // cleanup
     dir.close().unwrap();
 }
+
+#[test]
+#[serial]
+fn test_render_date_range() {
+    let template_table = indoc! { r#"
+        {% for date in date_range(start = start_date, end = end_date)  %}
+        - date: {{ date }} => Y: {{ date | date(format = "%Y") -}}
+        {% endfor %}
+    "# };
+    let template_index = indoc! { r#"
+        {% set start_date = "2022-01-01" %}
+        {% set end_date = "2022-01-05" %}
+        {% include "table.sql" %}
+    "# };
+
+    let expected = indoc! { r#"
+        - date: 2022-01-01 => Y: 2022
+        - date: 2022-01-02 => Y: 2022
+        - date: 2022-01-03 => Y: 2022
+        - date: 2022-01-04 => Y: 2022"# };
+
+    // create a temporary directory
+    let dir = tempdir().unwrap();
+
+    // Create a table.sql file
+    let file_path = dir.path().join("table.sql");
+    let mut file = File::create(file_path).expect("could not create temp file");
+    writeln!(file, "{}", &template_table).expect("could not write to temp file");
+
+    // Create a index.sql file
+    let file_path = dir.path().join("index.sql");
+    let mut file = File::create(file_path).expect("could not create temp file");
+    writeln!(file, "{}", &template_index).expect("could not write to temp file");
+
+    // Set working dir to tempdir
+    assert!(set_current_dir(&dir).is_ok());
+
+    let file_path = format!("{}", dir.path().display());
+
+    // $ athena build <file>
+    let mut cmd = Command::cargo_bin("athena").unwrap();
+    cmd.arg("build")
+        .arg(file_path)
+        .arg("--no-pretty")
+        .arg("true")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(expected));
+
+    // cleanup
+    dir.close().unwrap();
+}

@@ -2,7 +2,8 @@ use anyhow::{bail, Context, Result};
 use log::debug;
 use std::{fs::File, io::Write, path::PathBuf};
 
-use crate::utils::{get_current_working_dir, get_full_path_str, get_tera, is_dir, pretty_print};
+use crate::tera::get_tera;
+use crate::utils::{get_current_working_dir, get_full_path_str, is_dir, pretty_print};
 
 #[derive(clap::Args, Debug, Clone)]
 pub struct Build {

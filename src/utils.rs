@@ -3,8 +3,6 @@ use std::{
     fs::canonicalize,
     path::{Path, PathBuf},
 };
-use tera::Tera;
-use walkdir::WalkDir;
 
 /// Get current working dir
 pub fn get_current_working_dir(working_dir: Option<PathBuf>) -> Result<PathBuf> {
@@ -21,38 +19,6 @@ pub fn get_full_path_str(path: &Path) -> Result<String> {
     path.to_str()
         .map(|t| t.trim_end_matches('/').to_string())
         .with_context(|| "could not convert to string".to_string())
-}
-
-/// Get Tera template, load the template from working dir
-pub fn get_tera(target_path: PathBuf, working_dir: PathBuf) -> Result<Tera> {
-    let is_dir = is_dir(&target_path);
-    let working_dir_str = working_dir.to_str().expect("could not get working dir str");
-    let prefix = format!("{}/", working_dir_str);
-
-    let mut tera = Tera::default();
-
-    // Scan working_dir and adding .sql file as template
-    for entry in WalkDir::new(&working_dir)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        if let Some(ext) = entry.path().extension() {
-            if ext == "sql" {
-                let template_path = entry.path().display().to_string();
-                let template_name = template_path.clone();
-                let template_name = template_name.trim_start_matches(&prefix);
-                tera.add_template_file(template_path, Some(template_name))?;
-            }
-        }
-    }
-
-    if !is_dir {
-        let template_path = target_path.display().to_string();
-        let template_name = target_path.file_name().expect("could not get file name");
-        tera.add_template_file(template_path, template_name.to_str())?;
-    }
-
-    Ok(tera)
 }
 
 pub fn pretty_print(input: &[u8]) {
