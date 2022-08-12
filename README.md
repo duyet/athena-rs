@@ -25,7 +25,6 @@ Example project structure
     └── index.sql
 ```
 
-
 File `prd/index.sql`:
 
 ```sql
@@ -52,7 +51,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS `table_1` (
 
 ### 1. Build SQL from template
 
-Render for `./prd`. This is using [`Tera`](https://tera.netlify.app) template engine 
+Render for `./prd`. This is using [`Tera`](https://tera.netlify.app) template engine
 which is inspired by Jinja2 and Django templates.
 
 ```bash
@@ -78,9 +77,8 @@ CREATE EXTERNAL TABLE IF NOT EXISTS `table_2` (
 $ cd examples && athena apply --output_location=s3://athena-output/ ./prd
 ```
 
-Compatible with AWS Authentication methods: 
+Compatible with AWS Authentication methods:
 <https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html>
-
 
 Using AWS profile
 
@@ -102,6 +100,14 @@ $ export AWS_DEFAULT_REGION=us-west-2
 
 $ cd examples && athena apply ./prd
 ```
+
+# Limitations
+
+- Since Athena can run only one query in a session. `athena apply` break the queries by comma `;`.
+  Must includes the comma (`,`) at the end of each query.
+- `CREATE VIEW`:
+  - As synopsis of Athena do not accept database name. So please add the database name before the query like this example: [view.sql](./examples/view.sql)
+  - Backquoted identifiers are not supported, use double quotes to quote identifiers.
 
 # License
 

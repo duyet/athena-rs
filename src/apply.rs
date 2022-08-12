@@ -1,6 +1,7 @@
 use anyhow::{anyhow, bail, Context, Result};
 use aws_sdk_athena::{
     model::{
+        QueryExecutionContext,
         QueryExecutionState::{self, *},
         ResultConfiguration, ResultSet,
     },
@@ -8,6 +9,7 @@ use aws_sdk_athena::{
     Client,
 };
 use log::{error, info};
+use regex::Regex;
 use std::{env, path::PathBuf};
 use tokio::time::{sleep, Duration};
 
@@ -64,7 +66,11 @@ pub async fn call(args: Apply) -> Result<()> {
     };
 
     let sql = crate::build::build(build_args)?;
-    println!("SQL: {}", sql);
+    if args.no_pretty.unwrap_or_default() {
+        print!("{}", sql);
+    } else {
+        pretty_print(sql.as_bytes());
+    }
 
     // Set AWS_PROFILE
     if let Some(ref profile) = args.profile {
@@ -108,17 +114,37 @@ fn get_result_configuration(args: Apply) -> ResultConfiguration {
         .build()
 }
 
-async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> Result<()> {
-    let workgroup = args.workgroup.clone();
-    let result_configuration = get_result_configuration(args.clone());
+fn get_query_execution_context(query: Option<String>) -> Option<QueryExecutionContext> {
+    query.as_ref()?;
 
-    if query.is_none() {
+    let database = get_database_from_sql(query.unwrap());
+    database.as_ref()?;
+
+    let ctx = QueryExecutionContext::builder()
+        .set_database(database)
+        .build();
+
+    Some(ctx)
+}
+
+async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> Result<()> {
+    if query.clone().is_none() {
         bail!("Empty query");
     }
 
+    let workgroup = args.workgroup.clone();
+    let result_configuration = get_result_configuration(args.clone());
+    let query_execution_context = get_query_execution_context(query.clone());
     let query = query.unwrap();
 
-    info!("Submitting: ");
+    match &query_execution_context {
+        Some(ctx) => match ctx.database() {
+            Some(database) => info!("Submitting to database `{}`: ", database),
+            _ => info!("Submitting ..."),
+        },
+        _ => info!("Submitting ..."),
+    }
+
     if args.no_pretty.unwrap_or_default() {
         print!("{}", query);
     } else {
@@ -130,6 +156,7 @@ async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> 
         .set_query_string(Some(query))
         .set_work_group(workgroup)
         .set_result_configuration(Some(result_configuration.clone()))
+        .set_query_execution_context(query_execution_context)
         .send()
         .await?;
 
@@ -207,4 +234,61 @@ async fn get_query_result(client: &Client, query_execution_id: String) -> Result
         .result_set()
         .ok_or_else(|| anyhow!("could not get query result"))?
         .clone())
+}
+
+fn get_database_from_sql<S: AsRef<str>>(sql: S) -> Option<String> {
+    let re = vec![
+        Regex::new(r"(?i)--\s+Database:\s(.*)").unwrap(),
+        Regex::new(r"(?i)/*\s+Database:\s([^\s]+)\s\*/").unwrap(),
+    ];
+
+    for r in re.iter() {
+        if let Some(caps) = r.captures(sql.as_ref()) {
+            let name = caps.get(1).map_or("", |m| m.as_str());
+            return Some(name.trim().to_string());
+        }
+    }
+
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_database_from_sql() {
+        let sql = "-- database: db0";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db0");
+
+        let sql = "-- database: db1\nSELECT * FROM ...;";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db1");
+
+        let sql = "-- Database: db2\nSELECT * FROM ...;";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db2");
+
+        let sql = "-- Database: db3 \nSELECT * FROM ...;";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db3");
+
+        let sql = "-- Database: db4    \nSELECT * FROM ...;";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db4");
+
+        let sql = "--   Database: db4    \nSELECT * FROM ...;";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db4");
+
+        let sql = "/* Database: db5 */\nSELECT * FROM ...;";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db5");
+
+        let sql = "/* database: db6 */\nSELECT * FROM ...;";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db6");
+
+        let sql = "/*        database: db7 */\nSELECT * FROM ...;";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db7");
+
+        let sql = "SELECT * FROM ...;";
+        assert!(get_database_from_sql(sql).is_none());
+
+        let sql = "-- database: db0 \n-- database: db1";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db0");
+    }
 }
