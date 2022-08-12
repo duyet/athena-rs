@@ -101,6 +101,27 @@ $ export AWS_DEFAULT_REGION=us-west-2
 $ cd examples && athena apply ./prd
 ```
 
+# Example templates
+
+- Create Athena View: [./examples/base/view.sql](./examples/base/view.sql)
+
+  ```sql
+  -- Database: db1
+  CREATE VIEW "view" AS SELECT * FROM table_2;
+
+  /* Database: db2 */
+  CREATE VIEW "view" AS SELECT * FROM table_1;
+  ```
+
+- Add partitions date range: [./examples/base/table_1_partitions.sql](./examples/base/table_1_partitions.sql)
+
+  ```sql
+  ALTER TABLE table_name ADD IF NOT EXISTS
+    PARTITION (date_key = "2022-01-01") LOCATION "s3://stg/table_1/year=2022/month=01/day=01",
+    PARTITION (date_key = "2022-01-02") LOCATION "s3://stg/table_1/year=2022/month=01/day=02",
+    ...
+  ```
+
 # Limitations
 
 - Since Athena can run only one query in a session. `athena apply` break the queries by comma `;`.
