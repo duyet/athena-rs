@@ -1,5 +1,9 @@
 # athena-rs
 
+[![codecov](https://codecov.io/gh/duyet/athena-rs/branch/master/graph/badge.svg?token=FVVxtMwb4q)](https://codecov.io/gh/duyet/athena-rs)
+[![Code coverage](https://github.com/duyet/athena-rs/actions/workflows/cov.yaml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/cov.yaml)
+[![Rust](https://github.com/duyet/athena-rs/actions/workflows/ci.yaml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/ci.yaml)
+
 Managing AWS Athena Schemas
 
 # Cli Installation
@@ -134,3 +138,5 @@ $ cd examples && athena apply ./prd
 # License
 
 MIT.
+
+
