@@ -7,15 +7,22 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macOS-latest
     steps:
       - uses: actions/checkout@v3
       - run: cargo test
+
   fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - run: cargo fmt --check
+
   clippy:
     runs-on: ubuntu-latest
     steps:
