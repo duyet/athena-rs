@@ -129,6 +129,7 @@ $ cd examples && athena apply ./prd
 - `CREATE VIEW`:
   - As synopsis of Athena do not accept database name. So please add the database name before the query like this example: [view.sql](./examples/view.sql)
   - Backquoted identifiers are not supported, use double quotes to quote identifiers.
+- Maybe a bugs of [`walkdir`](https://docs.rs/walkdir), cannot named a file as `macros.sql`
 
 # License
 

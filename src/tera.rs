@@ -1,5 +1,7 @@
 use chrono::{Duration, NaiveDate};
+use log::debug;
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::path::PathBuf;
 use tera::{from_value, to_value, Error, Tera, Value};
 use walkdir::WalkDir;
@@ -17,19 +19,25 @@ pub fn get_tera(target_path: PathBuf, working_dir: PathBuf) -> anyhow::Result<Te
     let mut tera = Tera::default();
 
     // Scan working_dir and adding .sql file as template
-    for entry in WalkDir::new(&working_dir)
+    let templates = WalkDir::new(&working_dir)
         .into_iter()
         .filter_map(|e| e.ok())
-    {
-        if let Some(ext) = entry.path().extension() {
-            if ext == "sql" {
-                let template_path = entry.path().display().to_string();
-                let template_name = template_path.clone();
-                let template_name = template_name.trim_start_matches(&prefix);
-                tera.add_template_file(template_path, Some(template_name))?;
+        .filter_map(|e| {
+            if e.path().extension() == Some(OsStr::new("sql")) {
+                Some(e)
+            } else {
+                None
             }
-        }
-    }
+        })
+        .map(|e| {
+            let template_path = e.path().display().to_string();
+            let template_name = template_path.trim_start_matches(&prefix).to_string();
+            (template_path, Some(template_name))
+        })
+        .collect::<Vec<_>>();
+
+    debug!("Loaded: {:?}", templates);
+    tera.add_template_files(templates)?;
 
     if !is_dir {
         let template_path = target_path.display().to_string();

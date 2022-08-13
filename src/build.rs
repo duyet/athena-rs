@@ -100,7 +100,7 @@ pub fn build(args: Build) -> Result<String> {
             .trim_start_matches('/')
             .to_string()
     } else {
-        "index.sql".to_string()
+        path_str.to_string()
     };
 
     let out = tera

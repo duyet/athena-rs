@@ -208,16 +208,20 @@ fn should_works_with_a_file_in_cwd() {
 /// $ athena build <path>
 /// stdout should be: SELECT 1
 #[test]
+#[serial]
 fn should_works_with_a_file_at_any_cwd() {
     // create a temporary directory
     let dir = tempdir().unwrap();
 
     // Create a file inside tempdir
-    let file_path = dir.path().join("index.sql");
+    let file_path = dir.path().join("a.sql");
     let mut file = File::create(file_path).expect("could not create temp file");
     writeln!(file, "SELECT 1").expect("could not write to temp file");
 
-    let full_file_path = format!("{}/index.sql", dir.path().display());
+    // Set working dir to tempdir
+    assert!(set_current_dir(&dir).is_ok());
+
+    let full_file_path = format!("{}/a.sql", dir.path().display());
 
     // $ athena build <file>
     let mut cmd = Command::cargo_bin("athena").unwrap();
