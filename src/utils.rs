@@ -34,7 +34,7 @@ pub fn pretty_print(input: &[u8]) {
 
 /// Check if a directory
 /// Not sure why the .is_dir() is not works
-/// https://doc.rust-lang.org/std/path/struct.PathBuf.html#method.is_dir
+/// <https://doc.rust-lang.org/std/path/struct.PathBuf.html#method.is_dir>
 pub fn is_dir(path: &Path) -> bool {
     path.read_dir().is_ok()
 }
