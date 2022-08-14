@@ -1,11 +1,11 @@
-use assert_cmd::prelude::*; // Add methods on commands
+use assert_cmd::prelude::*;
 use indoc::indoc;
 use predicates::prelude::*;
 use serial_test::serial;
 use std::env::set_current_dir;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::process::Command; // Run programs
+use std::process::Command;
 use tempfile::tempdir;
 
 #[test]
@@ -409,6 +409,42 @@ fn test_render_to_file() {
     file.read_to_string(&mut data)
         .expect("could not read out.sql file");
     assert_eq!(data, expected);
+
+    // cleanup
+    dir.close().unwrap();
+}
+
+#[test]
+#[serial]
+fn test_render_to_file_permission_denied() {
+    let template = indoc! { r#"
+        {% set env = "production" %}
+        THIS IS {{ env }}
+    "# };
+    let expected = "THIS IS production";
+
+    // create a temporary directory
+    let dir = tempdir().unwrap();
+
+    // Create a file inside tempdir
+    let file_path = dir.path().join("index.sql");
+    let mut file = File::create(file_path).expect("could not create temp file");
+
+    writeln!(file, "{}", &template).expect("could not write to temp file");
+
+    // Set working dir to tempdir
+    assert!(set_current_dir(&dir).is_ok());
+
+    let full_file_path = format!("{}/index.sql", dir.path().display());
+
+    // $ athena build <file>
+    let mut cmd = Command::cargo_bin("athena").unwrap();
+    cmd.arg("build")
+        .arg(full_file_path)
+        .arg("--out")
+        .arg("/")
+        .assert()
+        .failure();
 
     // cleanup
     dir.close().unwrap();

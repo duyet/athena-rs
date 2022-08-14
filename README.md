@@ -138,5 +138,3 @@ $ cd examples && athena apply ./prd
 # License
 
 MIT.
-
-

@@ -8,9 +8,10 @@ use aws_sdk_athena::{
     output::GetQueryExecutionOutput,
     Client,
 };
+use devtimer::DevTime;
 use log::{error, info};
 use regex::Regex;
-use std::{env, path::PathBuf};
+use std::{collections::HashMap, env, path::PathBuf};
 use tokio::time::{sleep, Duration};
 
 use crate::utils::pretty_print;
@@ -97,9 +98,28 @@ pub async fn call(args: Apply) -> Result<()> {
         .collect::<Vec<_>>();
     info!("Submitting {} queries to Athena", sql.len());
 
+    let mut stats: HashMap<QueryExecutionState, i32> = HashMap::new();
+
+    // Timer
+    let mut timer = DevTime::new_simple();
+    timer.start();
+
     for s in sql {
-        submit_and_wait(client.clone(), Some(s.to_string()), args.clone()).await?;
+        let state = submit_and_wait(client.clone(), Some(s.to_string()), args.clone()).await?;
+
+        // Update stats
+        stats
+            .entry(state.clone())
+            .and_modify(|c| *c += 1)
+            .or_insert(0);
     }
+
+    timer.stop();
+
+    info!("");
+    info!("Statistics:");
+    info!("  ==> {:?}", stats);
+    info!("  ==> Took: {:?} seconds", timer.time_in_secs().unwrap());
 
     Ok(())
 }
@@ -127,10 +147,18 @@ fn get_query_execution_context(query: Option<String>) -> Option<QueryExecutionCo
     Some(ctx)
 }
 
-async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> Result<()> {
+async fn submit_and_wait(
+    client: Client,
+    query: Option<String>,
+    args: Apply,
+) -> Result<QueryExecutionState> {
     if query.clone().is_none() {
         bail!("Empty query");
     }
+
+    // Timer
+    let mut timer = DevTime::new_simple();
+    timer.start();
 
     let workgroup = args.workgroup.clone();
     let result_configuration = get_result_configuration(args.clone());
@@ -139,10 +167,10 @@ async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> 
 
     match &query_execution_context {
         Some(ctx) => match ctx.database() {
-            Some(database) => info!("Submitting to database `{}`: ", database),
-            _ => info!("Submitting ..."),
+            Some(database) => info!("\nSubmitting to database `{}`: ", database),
+            _ => info!("\nSubmitting ..."),
         },
-        _ => info!("Submitting ..."),
+        _ => info!("\nSubmitting ..."),
     }
 
     if args.no_pretty.unwrap_or_default() {
@@ -163,6 +191,8 @@ async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> 
     let query_execution_id = resp.query_execution_id().unwrap_or_default();
     info!("Query execution id: {}", &query_execution_id);
 
+    let mut state: QueryExecutionState;
+
     loop {
         let resp = client
             .get_query_execution()
@@ -170,15 +200,15 @@ async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> 
             .send()
             .await?;
 
-        let status = status(&resp).unwrap();
+        state = status(&resp).expect("could not get query status").clone();
 
-        match status {
+        match state {
             Queued | Running => {
                 sleep(Duration::from_secs(5)).await;
-                info!("State: {:?}, sleep 5 secs ...", status);
+                info!("State: {:?}, sleep 5 secs ...", state);
             }
             Cancelled | Failed => {
-                error!("State: {:?}", status);
+                error!("State: {:?}", state);
 
                 match get_query_result(&client, query_execution_id.to_string()).await {
                     Ok(result) => info!("Result: {:?}", result),
@@ -189,7 +219,7 @@ async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> 
             }
             _ => {
                 let millis = total_execution_time(&resp).unwrap();
-                info!("State: {:?}", status);
+                info!("State: {:?}", state);
                 info!("Total execution time: {} millis", millis);
 
                 match get_query_result(&client, query_execution_id.to_string()).await {
@@ -202,7 +232,10 @@ async fn submit_and_wait(client: Client, query: Option<String>, args: Apply) -> 
         }
     }
 
-    Ok(())
+    timer.stop();
+    info!("Took: {} secs", timer.time_in_secs().unwrap());
+
+    Ok(state.clone())
 }
 
 fn status(resp: &GetQueryExecutionOutput) -> Option<&QueryExecutionState> {
