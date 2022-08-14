@@ -421,7 +421,6 @@ fn test_render_to_file_permission_denied() {
         {% set env = "production" %}
         THIS IS {{ env }}
     "# };
-    let expected = "THIS IS production";
 
     // create a temporary directory
     let dir = tempdir().unwrap();
