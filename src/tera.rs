@@ -64,7 +64,7 @@ fn get_native_date(key: &str, input: Option<&Value>) -> tera::Result<NaiveDate> 
         Ok(val) => match NaiveDate::parse_from_str(&val, DATE_FORMAT) {
             Ok(v) => Ok(v),
             Err(_) => {
-                return Err(Error::msg(format!(
+                Err(Error::msg(format!(
                     "Function `date_range` received {key}={input} but `{key}` is invalid format ({DATE_FORMAT})",
                 )))
             }
