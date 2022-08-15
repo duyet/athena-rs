@@ -12,7 +12,7 @@ Managing AWS Athena Schemas
 # Installation
 
 ```bash
-$ cargo install https://github.com/duyet/athena-rs
+$ cargo install --git https://github.com/duyet/athena-rs
 $ athena --help
 
 athena 0.1.0
