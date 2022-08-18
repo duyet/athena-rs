@@ -15,7 +15,7 @@ devtimer = "4.0.1"
 env_logger = "0.9.0"
 log = "0.4.17"
 regex = "1.6.0"
-tera = "1.16.0"
+tera = "1.17.0"
 tokio = { version = "1.20.1", features = ["full"] }
 walkdir = "2.3.2"
 
