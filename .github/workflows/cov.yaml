@@ -1,6 +1,6 @@
-on: [push, pull_request]
-
 name: Code coverage
+
+on: [push, pull_request]
 
 jobs:
   grcov:

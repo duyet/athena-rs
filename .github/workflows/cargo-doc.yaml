@@ -13,13 +13,11 @@ permissions:
   pages: write
   id-token: write
 
-# Allow one concurrent deployment
 concurrency:
   group: 'pages'
   cancel-in-progress: true
 
 jobs:
-  # Single deploy job since we're just deploying
   deploy:
     environment:
       name: github-pages
@@ -28,14 +26,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
       - run: cargo doc
+
       - name: Setup Pages
         uses: actions/configure-pages@v2
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          # Upload entire repository
           path: 'target/doc'
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@main
