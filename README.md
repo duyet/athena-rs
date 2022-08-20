@@ -19,7 +19,7 @@ $ athena --help
 
 athena 0.1.0
 Duyet <me@duyet.net>
-AWS Athena Management
+Managing AWS Athena Schemas
 
 USAGE:
     athena <SUBCOMMAND>
