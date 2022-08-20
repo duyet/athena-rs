@@ -17,13 +17,3 @@ cat <(tail -n +$(expr $END_GEN) $main)                          >> $temp
 
 cat $temp
 cat $temp > $main
-
-# Commit changes
-CURRENT_BRANCH=${GITHUB_REF#refs/heads/}
-REMOTE_REPO="https://${GITHUB_ACTOR}:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
-git config --local user.email "duyetbot@users.noreply.github.com"
-git config --local user.name "duyetbot"
-git status
-git add README.md
-git commit -m "docs: Generate README.md [skip ci]"
-git push $REMOTE_REPO $CURRENT_BRANCH
