@@ -2,7 +2,7 @@ use clap::Parser;
 
 use crate::{apply::Apply, build::Build};
 
-/// AWS Athena Management
+/// Managing AWS Athena Schemas
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 #[clap(arg_required_else_help(true))]
