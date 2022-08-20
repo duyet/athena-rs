@@ -1,0 +1,13 @@
+name: gen-readme 
+
+on:
+  push:
+    branches: ['master']
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - run: ./gen-readme.sh

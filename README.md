@@ -1,16 +1,18 @@
 # athena-rs
 
 [![codecov](https://codecov.io/gh/duyet/athena-rs/branch/master/graph/badge.svg?token=FVVxtMwb4q)](https://codecov.io/gh/duyet/athena-rs)
+[![cargo-clippy](https://github.com/duyet/athena-rs/actions/workflows/cargo-clippy.yml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/cargo-clippy.yml)
+[![cargo-test](https://github.com/duyet/athena-rs/actions/workflows/cargo-test.yaml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/cargo-test.yaml)
 [![Code coverage](https://github.com/duyet/athena-rs/actions/workflows/cov.yaml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/cov.yaml)
-[![rust-test](https://github.com/duyet/athena-rs/actions/workflows/rust-test.yaml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/rust-test.yaml)
-[![rust-clippy](https://github.com/duyet/athena-rs/actions/workflows/rust-clippy.yml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/rust-clippy.yml)
-[![cargo-doc](https://github.com/duyet/athena-rs/actions/workflows/rust-doc.yaml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/rust-doc.yaml)
-[![Code coverage](https://github.com/duyet/athena-rs/actions/workflows/cov.yaml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/cov.yaml)
+[![cargo-doc](https://github.com/duyet/athena-rs/actions/workflows/cargo-doc.yaml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/cargo-doc.yaml)
+[![cargo-fmt](https://github.com/duyet/athena-rs/actions/workflows/cargo-fmt.yaml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/cargo-fmt.yaml)
+
 
 Managing AWS Athena Schemas
 
 # Installation
 
+<!-- BEGIN INSTALLATION -->
 ```bash
 $ cargo install --git https://github.com/duyet/athena-rs
 $ athena --help
@@ -31,6 +33,7 @@ SUBCOMMANDS:
     build    Build SQL from template path
     help     Print this message or the help of the given subcommand(s)
 ```
+<!-- END INSTALLATION -->
 
 # Usages
 
