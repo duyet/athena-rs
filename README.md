@@ -150,8 +150,8 @@ $ cd examples && athena apply ./prd
 
 # Limitations
 
-- Since Athena can run only one query in a session. `athena apply` break the queries by comma `;`.
-  Must includes the comma (`,`) at the end of each query.
+- Since Athena can run only one query in a session. So `athena apply` break the queries by semicolon `;`.
+  Must includes the semicolon `;` at the end of each SQL statement.
 - `CREATE VIEW`:
   - As synopsis of Athena do not accept database name. So please add the database name before the query like this example: [view.sql](./examples/view.sql)
   - Backquoted identifiers are not supported, use double quotes to quote identifiers.
