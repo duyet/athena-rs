@@ -26,8 +26,6 @@ pub struct Build {
 }
 
 pub async fn call(args: Build) -> Result<()> {
-    let (_, path_str) = get_dirs(args.clone())?;
-
     // Render SQL
     let sql = build(args.clone())?;
 
@@ -35,11 +33,11 @@ pub async fn call(args: Build) -> Result<()> {
     match args.out {
         Some(path) => {
             let mut file = File::create(&path)
-                .with_context(|| format!("could not create output file {}", path_str))?;
+                .with_context(|| format!("could not create output file {}", path.display()))?;
 
             match file.write_all(sql.as_bytes()) {
-                Ok(_) => println!("write to {}", path_str),
-                Err(e) => println!("failed write to {}: {}", path_str, e),
+                Ok(_) => println!("Write to {}", path.display()),
+                Err(e) => println!("Failed write to {}: {}", path.display(), e),
             }
         }
         None => {
