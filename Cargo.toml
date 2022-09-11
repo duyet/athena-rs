@@ -8,7 +8,7 @@ authors = ["Duyet <me@duyet.net>"]
 anyhow = { version = "1.0.64", features = ["backtrace"] }
 aws-config = "0.48.0"
 aws-sdk-athena = "0.18.0"
-bat = "0.21.0"
+bat = "0.22.1"
 chrono = "0.4.22"
 clap = { version = "3.2.20", features = ["derive"] }
 devtimer = "4.0.1"
