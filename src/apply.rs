@@ -323,5 +323,20 @@ mod tests {
 
         let sql = "-- database: db0 \n-- database: db1";
         assert_eq!(get_database_from_sql(sql).unwrap(), "db0");
+
+        let sql = "/* database: db0 */\n/* database: db1 */";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db0");
+    }
+
+    #[test]
+    fn test_get_database_from_sql_with_comment() {
+        let sql = "-- database: db0\n-- comment\nSELECT * FROM ...;";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db0");
+
+        let sql = "-- database: db0\n-- comment\n-- comment\nSELECT * FROM ...;";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db0");
+
+        let sql = "-- database: db0\n-- comment\n-- comment\n-- comment\nSELECT * FROM ...;";
+        assert_eq!(get_database_from_sql(sql).unwrap(), "db0");
     }
 }
