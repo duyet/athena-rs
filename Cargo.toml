@@ -9,7 +9,7 @@ anyhow = { version = "1.0.66", features = ["backtrace"] }
 aws-config = "0.51.0"
 aws-sdk-athena = "0.21.0"
 bat = "0.22.1"
-chrono = "0.4.22"
+chrono = "0.4.23"
 clap = { version = "3.2.23", features = ["derive"] }
 devtimer = "4.0.1"
 env_logger = "0.9.3"
