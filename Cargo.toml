@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Duyet <me@duyet.net>"]
 
 [dependencies]
-anyhow = { version = "1.0.66", features = ["backtrace"] }
+anyhow = { version = "1.0.68", features = ["backtrace"] }
 aws-config = "0.52.0"
 aws-sdk-athena = "0.22.0"
 bat = "0.22.1"
@@ -21,7 +21,7 @@ walkdir = "2.3.2"
 
 [dev-dependencies]
 assert_cmd = "2.0.7"
-indoc = "1.0.7"
+indoc = "1.0.8"
 predicates = "2.1.4"
-serial_test = "0.9.0"
+serial_test = "0.10.0"
 tempfile = "3.3.0"
