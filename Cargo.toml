@@ -20,7 +20,7 @@ tokio = { version = "1.24.1", features = ["full"] }
 walkdir = "2.3.2"
 
 [dev-dependencies]
-assert_cmd = "2.0.7"
+assert_cmd = "2.0.8"
 indoc = "1.0.8"
 predicates = "2.1.5"
 serial_test = "0.10.0"
