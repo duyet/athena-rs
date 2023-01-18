@@ -17,21 +17,18 @@ Managing AWS Athena Schemas
 $ cargo install --git https://github.com/duyet/athena-rs
 $ athena --help
 
-athena 0.1.0
-Duyet <me@duyet.net>
 Managing AWS Athena Schemas
 
-USAGE:
-    athena <SUBCOMMAND>
+Usage: athena <COMMAND>
 
-OPTIONS:
-    -h, --help       Print help information
-    -V, --version    Print version information
+Commands:
+  build  Build SQL from template path
+  apply  Build and execute SQL to Athena
+  help   Print this message or the help of the given subcommand(s)
 
-SUBCOMMANDS:
-    apply    Build and execute SQL to Athena
-    build    Build SQL from template path
-    help     Print this message or the help of the given subcommand(s)
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 <!-- END INSTALLATION -->
 
