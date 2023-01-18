@@ -4,11 +4,11 @@ use crate::{apply::Apply, build::Build};
 
 /// Managing AWS Athena Schemas
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None)]
 #[clap(arg_required_else_help(true))]
 #[clap(color(clap::ColorChoice::Auto))]
 pub struct Cli {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub cmd: Command,
 }
 
@@ -22,5 +22,5 @@ pub enum Command {
 
 // Parse the command line arguments
 pub fn parse() -> Cli {
-    Cli::from_args()
+    Cli::parse()
 }

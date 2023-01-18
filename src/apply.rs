@@ -20,41 +20,40 @@ use crate::utils::pretty_print;
 pub struct Apply {
     /// Target path to render. If the target path is a directory,
     /// the root folder must contains the index.sql file
-    #[clap(parse(from_os_str))]
     pub file: PathBuf,
 
     /// Change the context current working dir
-    #[clap(long, short, parse(from_os_str))]
+    #[arg(long, short)]
     pub context: Option<PathBuf>,
 
     /// Dry-run
-    #[clap(global = true, long, short)]
+    #[arg(global = true, long, short)]
     pub dry_run: Option<bool>,
 
     /// AWS Profile
     /// Set this option via environment variable: export AWS_PROFILE=default
-    #[clap(global = true, long, short)]
+    #[arg(global = true, long, short)]
     pub profile: Option<String>,
 
     /// AWS Region
-    #[clap(global = true, long, short)]
+    #[arg(global = true, long, short)]
     /// Set this option via environment variable: export AWS_DEFAULT_REGION=us-east-1
     pub region: Option<String>,
 
     /// AWS Athena Workgroup
     /// Set this option via environment variable: export AWS_WORKGROUP=primary
-    #[clap(global = true, long, short)]
+    #[arg(global = true, long, short)]
     pub workgroup: Option<String>,
 
     /// AWS Athena output location
     /// The location in Amazon S3 where your query results are stored
     /// such as `s3://path/to/query/bucket/`
     /// Set this option via environment variable: export AWS_OUTPUT_LOCATION=s3://bucket/
-    #[clap(global = true, long, short)]
+    #[arg(global = true, long, short)]
     pub output_location: Option<String>,
 
     /// No pretty print for SQL
-    #[clap(long)]
+    #[arg(long)]
     pub no_pretty: Option<bool>,
 }
 
