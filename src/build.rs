@@ -9,19 +9,18 @@ use crate::utils::{get_current_working_dir, get_full_path_str, is_dir, pretty_pr
 pub struct Build {
     /// Target path to render. If the target path is a directory,
     /// the root folder must contains the index.sql file
-    #[clap(parse(from_os_str))]
     pub file: PathBuf,
 
     /// Output path. The file will be overwritten if is already exists
-    #[clap(long, short, parse(from_os_str))]
+    #[arg(long, short)]
     pub out: Option<PathBuf>,
 
     /// Change the context current working dir
-    #[clap(long, short, parse(from_os_str))]
+    #[arg(long, short)]
     pub context: Option<PathBuf>,
 
     /// No pretty print for SQL
-    #[clap(long, short)]
+    #[arg(long, short)]
     pub no_pretty: Option<bool>,
 }
 

@@ -44,9 +44,7 @@ fn build_missing_file() {
 
     cmd.assert()
         .failure()
-        .stderr(predicate::str::contains(
-            "The following required arguments were not provided",
-        ))
+        .stderr(predicate::str::contains("were not provided"))
         .stderr(predicate::str::contains("<FILE>"));
 }
 
