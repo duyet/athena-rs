@@ -104,6 +104,40 @@ fn test_render_simple_file_should_works() {
     dir.close().unwrap();
 }
 
+/// Create an empty folder <temp>.
+/// Create a abc.txt file with content: SELECT 1
+/// $ athena build .
+/// stderr should be: top-level doesn't contains any .sql file
+#[test]
+#[serial]
+fn test_render_no_sql_file_should_not_works() {
+    // create a temporary directory
+    let dir = tempdir().unwrap();
+
+    // Create a file inside dir
+    let file_path = dir.path().join("abc.txt");
+    let mut file = File::create(file_path).expect("could not create temp file");
+    writeln!(file, "SELECT 1").expect("could not write to temp file");
+
+    // Set working dir to tempdir
+    assert!(set_current_dir(&dir).is_ok());
+
+    // $ athena build <path>
+    let mut cmd = Command::cargo_bin("athena").unwrap();
+    cmd.arg("build")
+        .arg(".")
+        .arg("--no-pretty")
+        .arg("true")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "top-level doesn't contains any .sql file",
+        ));
+
+    // cleanup
+    dir.close().unwrap();
+}
+
 /// Create an empty folder.
 /// Create a index.sql file with content: SELECT 1
 /// $ athena build ./////

@@ -78,7 +78,7 @@ pub fn build(args: Build) -> Result<String> {
             .map(|f| f.path())
             .collect::<Vec<_>>();
 
-        bail!("top-level doesn't contains any index.sql file: {:?}", files);
+        bail!("top-level doesn't contains any .sql file: {:?}", files);
     }
 
     // Init Tera template
