@@ -45,6 +45,7 @@ jobs:
         cat notes-${{ env.RELEASE_VERSION }}.md
     - name: Create GitHub release
       id: release
+      if: env.RELEASE_VERSION == ''
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
