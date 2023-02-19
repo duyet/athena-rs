@@ -8,9 +8,13 @@
 [![cargo-fmt](https://github.com/duyet/athena-rs/actions/workflows/cargo-fmt.yaml/badge.svg)](https://github.com/duyet/athena-rs/actions/workflows/cargo-fmt.yaml)
 
 
-Managing AWS Athena Schemas
+Athena-rs is a Rust-based tool for managing AWS Athena schemas. This tool provides two commands to build SQL templates and apply them to Athena. 
+The build command renders SQL from the specified template path using the [`Tera`](https://tera.netlify.app) template engine, while the apply command builds and executes the SQL in Athena.
+
 
 # Installation
+
+The following command can be used to install athena-rs:
 
 <!-- BEGIN INSTALLATION -->
 ```bash
@@ -34,7 +38,7 @@ Options:
 
 # Usages
 
-Example project structure
+This is an example of a project structure:
 
 ```bash
 .
@@ -48,21 +52,22 @@ Example project structure
     └── index.sql
 ```
 
-File `prd/index.sql`:
+The `prd/index.sql` file is defined as follows:
+
 
 ```sql
 {% set s3_bucket = "s3://prd" %}
 {% include 'base/index.sql' %}
 ```
 
-File `base/index.sql`:
+The `base/index.sql` file is defined as follows:
 
 ```sql
 {% include "base/table_1.sql" %}
 {% include "base/table_2.sql" %}
 ```
 
-File `base/table_1.sql`:
+The `base/table_1.sql` file is defined as follows:
 
 ```sql
 CREATE EXTERNAL TABLE IF NOT EXISTS `table_1` (
@@ -72,10 +77,9 @@ CREATE EXTERNAL TABLE IF NOT EXISTS `table_1` (
 
 ```
 
-### 1. Build SQL from template
+### 1. Build SQL from the specified template
 
-Render for `./prd`. This is using [`Tera`](https://tera.netlify.app) template engine
-which is inspired by Jinja2 and Django templates.
+Use the following command to render the template located in [`./prd`](examples/prd):
 
 ```bash
 $ cd examples && cargo run build ./prd
@@ -147,6 +151,8 @@ $ cd examples && athena apply ./prd
 
 # Limitations
 
+- The athena apply command currently does not support handling errors that occur when executing the generated SQL statements. You must manually check the Athena console or logs for any errors that may occur during execution.
+- This tool has only been tested with basic SQL queries and may not work correctly with more complex queries or with specific versions of AWS Athena.
 - Since Athena can run only one query in a session. So `athena apply` break the queries by semicolon `;`.
   Must includes the semicolon `;` at the end of each SQL statement.
 - `CREATE VIEW`:
