@@ -5,23 +5,23 @@ edition = "2021"
 authors = ["Duyet <me@duyet.net>"]
 
 [dependencies]
-anyhow = { version = "1.0.68", features = ["backtrace"] }
-aws-config = "0.53.0"
-aws-sdk-athena = "0.23.0"
-bat = "0.22.1"
-chrono = "0.4.23"
-clap = { version = "4.1.1", features = ["derive"] }
+anyhow = { version = "1.0.81", features = ["backtrace"] }
+aws-config = "0.101.0"
+aws-sdk-athena = "0.39.0"
+bat = "0.24.0"
+chrono = "0.4.37"
+clap = { version = "4.5.4", features = ["derive"] }
 devtimer = "4.0.1"
-env_logger = "0.10.0"
-log = "0.4.17"
-regex = "1.7.1"
-tera = "1.17.1"
-tokio = { version = "1.24.2", features = ["full"] }
-walkdir = "2.3.2"
+env_logger = "0.11.3"
+log = "0.4.21"
+regex = "1.10.4"
+tera = "1.19.1"
+tokio = { version = "1.37.0", features = ["full"] }
+walkdir = "2.5.0"
 
 [dev-dependencies]
-assert_cmd = "2.0.8"
-indoc = "2.0.0"
-predicates = "3.0.2"
+assert_cmd = "2.0.14"
+indoc = "2.0.5"
+predicates = "3.1.0"
 serial_test = "2.0.0"
-tempfile = "3.3.0"
+tempfile = "3.10.1"
