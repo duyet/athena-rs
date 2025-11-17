@@ -16,6 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@1.64.0 # MSRV
+      - uses: dtolnay/rust-toolchain@1.75.0 # MSRV
 
       - run: cargo test
