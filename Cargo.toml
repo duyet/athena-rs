@@ -3,6 +3,15 @@ name = "athena"
 version = "0.1.0"
 edition = "2021"
 authors = ["Duyet <me@duyet.net>"]
+description = "A Rust-based CLI tool for managing AWS Athena schemas using templated SQL with Tera"
+license = "MIT"
+repository = "https://github.com/duyet/athena-rs"
+homepage = "https://github.com/duyet/athena-rs"
+documentation = "https://docs.rs/athena"
+keywords = ["aws", "athena", "sql", "template", "cli"]
+categories = ["command-line-utilities", "database", "template-engine"]
+readme = "README.md"
+rust-version = "1.64.0"
 
 [dependencies]
 anyhow = { version = "1.0.68", features = ["backtrace"] }
@@ -14,6 +23,7 @@ clap = { version = "4.1.1", features = ["derive"] }
 devtimer = "4.0.1"
 env_logger = "0.10.0"
 log = "0.4.17"
+once_cell = "1.19.0"
 regex = "1.7.1"
 tera = "1.17.1"
 tokio = { version = "1.24.2", features = ["full"] }
@@ -25,3 +35,17 @@ indoc = "2.0.0"
 predicates = "3.0.2"
 serial_test = "2.0.0"
 tempfile = "3.3.0"
+
+[lints.clippy]
+# Deny unsafe practices
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+# Encourage best practices
+todo = "warn"
+unimplemented = "warn"
+# Performance
+needless_pass_by_value = "warn"
+# Readability
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
