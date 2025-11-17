@@ -1,3 +1,28 @@
+//! AWS Athena query execution functionality
+//!
+//! This module handles building SQL templates and executing them in AWS Athena.
+//! It provides functionality to:
+//! - Submit queries to Athena
+//! - Poll for query completion
+//! - Retrieve query results
+//! - Extract database context from SQL comments
+//!
+//! # Database Context
+//!
+//! You can specify the target database using SQL comments:
+//!
+//! ```sql
+//! -- Database: my_database
+//! CREATE TABLE example (id INT);
+//! ```
+//!
+//! or
+//!
+//! ```sql
+//! /* Database: my_database */
+//! CREATE TABLE example (id INT);
+//! ```
+
 use anyhow::{anyhow, bail, Context, Result};
 use aws_sdk_athena::{
     model::{
@@ -10,11 +35,26 @@ use aws_sdk_athena::{
 };
 use devtimer::DevTime;
 use log::{error, info};
+use once_cell::sync::Lazy;
 use regex::Regex;
 use std::{collections::HashMap, env, path::PathBuf};
 use tokio::time::{sleep, Duration};
 
 use crate::utils::pretty_print;
+
+// Constants
+const QUERY_POLL_INTERVAL_SECS: u64 = 5;
+const SQL_STATEMENT_SEPARATOR: char = ';';
+
+// Compile regex patterns once and reuse them for extracting database names from SQL
+static DATABASE_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
+    vec![
+        // Matches: -- Database: db_name
+        Regex::new(r"(?i)--\s+Database:\s(.*)").expect("invalid regex pattern"),
+        // Matches: /* Database: db_name */
+        Regex::new(r"(?i)/*\s+Database:\s([^\s]+)\s\*/").expect("invalid regex pattern"),
+    ]
+});
 
 #[derive(clap::Args, Debug, Clone)]
 pub struct Apply {
@@ -90,7 +130,7 @@ pub async fn call(args: Apply) -> Result<()> {
 
     // Submit SQL
     let sql = sql
-        .split(';')
+        .split(SQL_STATEMENT_SEPARATOR)
         .into_iter()
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
@@ -118,7 +158,9 @@ pub async fn call(args: Apply) -> Result<()> {
     info!("");
     info!("Statistics:");
     info!("  ==> {:?}", stats);
-    info!("  ==> Took: {:?} seconds", timer.time_in_secs().unwrap());
+    if let Some(secs) = timer.time_in_secs() {
+        info!("  ==> Took: {:?} seconds", secs);
+    }
 
     Ok(())
 }
@@ -134,9 +176,9 @@ fn get_result_configuration(args: Apply) -> ResultConfiguration {
 }
 
 fn get_query_execution_context(query: Option<String>) -> Option<QueryExecutionContext> {
-    query.as_ref()?;
+    let query = query.as_ref()?;
 
-    let database = get_database_from_sql(query.unwrap());
+    let database = get_database_from_sql(query);
     database.as_ref()?;
 
     let ctx = QueryExecutionContext::builder()
@@ -187,7 +229,9 @@ async fn submit_and_wait(
         .send()
         .await?;
 
-    let query_execution_id = resp.query_execution_id().unwrap_or_default();
+    let query_execution_id = resp
+        .query_execution_id()
+        .ok_or_else(|| anyhow!("query execution id not found in response"))?;
     info!("Query execution id: {}", &query_execution_id);
 
     let mut state: QueryExecutionState;
@@ -199,12 +243,17 @@ async fn submit_and_wait(
             .send()
             .await?;
 
-        state = status(&resp).expect("could not get query status").clone();
+        state = status(&resp)
+            .ok_or_else(|| anyhow!("could not get query execution status from response"))?
+            .clone();
 
         match state {
             Queued | Running => {
-                sleep(Duration::from_secs(5)).await;
-                info!("State: {:?}, sleep 5 secs ...", state);
+                sleep(Duration::from_secs(QUERY_POLL_INTERVAL_SECS)).await;
+                info!(
+                    "State: {:?}, sleeping {} secs ...",
+                    state, QUERY_POLL_INTERVAL_SECS
+                );
             }
             Cancelled | Failed => {
                 error!("State: {:?}", state);
@@ -217,9 +266,10 @@ async fn submit_and_wait(
                 break;
             }
             _ => {
-                let millis = total_execution_time(&resp).unwrap();
                 info!("State: {:?}", state);
-                info!("Total execution time: {} millis", millis);
+                if let Some(millis) = total_execution_time(&resp) {
+                    info!("Total execution time: {} millis", millis);
+                }
 
                 match get_query_result(&client, query_execution_id.to_string()).await {
                     Ok(result) => info!("Result: {:?}", result),
@@ -232,21 +282,23 @@ async fn submit_and_wait(
     }
 
     timer.stop();
-    info!("Took: {} secs", timer.time_in_secs().unwrap());
+    if let Some(secs) = timer.time_in_secs() {
+        info!("Took: {} secs", secs);
+    }
 
     Ok(state.clone())
 }
 
 fn status(resp: &GetQueryExecutionOutput) -> Option<&QueryExecutionState> {
-    resp.query_execution().unwrap().status().unwrap().state()
+    resp.query_execution()
+        .and_then(|qe| qe.status())
+        .and_then(|s| s.state())
 }
 
 fn total_execution_time(resp: &GetQueryExecutionOutput) -> Option<i64> {
     resp.query_execution()
-        .unwrap()
-        .statistics()
-        .unwrap()
-        .total_execution_time_in_millis()
+        .and_then(|qe| qe.statistics())
+        .and_then(|s| s.total_execution_time_in_millis())
 }
 
 async fn get_query_result(client: &Client, query_execution_id: String) -> Result<ResultSet> {
@@ -269,12 +321,7 @@ async fn get_query_result(client: &Client, query_execution_id: String) -> Result
 }
 
 fn get_database_from_sql<S: AsRef<str>>(sql: S) -> Option<String> {
-    let re = vec![
-        Regex::new(r"(?i)--\s+Database:\s(.*)").unwrap(),
-        Regex::new(r"(?i)/*\s+Database:\s([^\s]+)\s\*/").unwrap(),
-    ];
-
-    for r in re.iter() {
+    for r in DATABASE_PATTERNS.iter() {
         if let Some(caps) = r.captures(sql.as_ref()) {
             let name = caps.get(1).map_or("", |m| m.as_str());
             return Some(name.trim().to_string());

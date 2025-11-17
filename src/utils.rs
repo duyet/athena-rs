@@ -1,3 +1,10 @@
+////! Utility functions for path handling and output formatting
+//!
+//! This module provides common utility functions used across the application:
+//! - Path manipulation and canonicalization
+//! - Directory checking
+//! - Pretty printing SQL output using `bat`
+
 use anyhow::{Context, Result};
 use std::{
     fs::canonicalize,
@@ -22,21 +29,25 @@ pub fn get_full_path_str(path: &Path) -> Result<String> {
 }
 
 pub fn pretty_print(input: &[u8]) {
-    bat::PrettyPrinter::new()
+    if let Err(e) = bat::PrettyPrinter::new()
         .header(true)
         .grid(true)
         .line_numbers(true)
         .language("sql")
         .input_from_bytes(input)
         .print()
-        .unwrap();
+    {
+        // Fallback to simple output if pretty printing fails
+        eprintln!("Warning: pretty printing failed: {}", e);
+        if let Ok(s) = std::str::from_utf8(input) {
+            print!("{}", s);
+        }
+    }
 }
 
-/// Check if a directory
-/// Not sure why the .is_dir() is not works
-/// <https://doc.rust-lang.org/std/path/struct.PathBuf.html#method.is_dir>
+/// Check if a path is a directory
 pub fn is_dir(path: &Path) -> bool {
-    path.read_dir().is_ok()
+    path.is_dir()
 }
 
 #[cfg(test)]

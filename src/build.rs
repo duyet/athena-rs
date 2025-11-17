@@ -1,9 +1,23 @@
+//! SQL template building functionality
+//!
+//! This module provides functionality to build (render) SQL from Tera templates.
+//! It handles both single SQL files and directories containing multiple template files.
+//!
+//! The build process:
+//! 1. Loads all `.sql` files from the working directory as templates
+//! 2. Renders the target template (or `index.sql` if a directory is provided)
+//! 3. Outputs the rendered SQL to stdout or a file
+
 use anyhow::{bail, Context, Result};
 use log::debug;
 use std::{fs::File, io::Write, path::PathBuf};
 
 use crate::tera::get_tera;
 use crate::utils::{get_current_working_dir, get_full_path_str, is_dir, pretty_print};
+
+// Constants
+const INDEX_SQL_FILENAME: &str = "index.sql";
+const SQL_FILE_EXTENSION: &str = "sql";
 
 #[derive(clap::Args, Debug, Clone)]
 pub struct Build {
@@ -68,7 +82,7 @@ pub fn build(args: Build) -> Result<String> {
         && !path
             .read_dir()?
             .filter_map(Result::ok)
-            .any(|f| f.path().extension().unwrap_or_default() == "sql")
+            .any(|f| f.path().extension().and_then(|s| s.to_str()) == Some(SQL_FILE_EXTENSION))
     {
         let files = path
             .read_dir()?
@@ -93,7 +107,7 @@ pub fn build(args: Build) -> Result<String> {
 
     // Render the index.sql file if the target path is a folder
     let endpoint = if is_dir {
-        format!("{}/index.sql", path_str)
+        format!("{}/{}", path_str, INDEX_SQL_FILENAME)
             .trim_start_matches('/')
             .to_string()
     } else {
@@ -116,7 +130,9 @@ fn get_dirs(args: Build) -> Result<(PathBuf, String)> {
 
     // Get path_str (without context directory prefix)
     let path_str = get_full_path_str(path)?;
-    let working_dir_str = working_dir.to_str().expect("could not get working dir str");
+    let working_dir_str = working_dir
+        .to_str()
+        .ok_or_else(|| anyhow::anyhow!("working directory path is not valid UTF-8"))?;
     let path_str = path_str
         .trim_start_matches(working_dir_str)
         .trim_start_matches('/')
