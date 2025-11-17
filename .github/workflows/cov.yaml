@@ -12,41 +12,22 @@ jobs:
           - macOS-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-          profile: minimal
+        uses: dtolnay/rust-toolchain@nightly
 
-      - name: Execute tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Generate code coverage
+        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
         env:
           CARGO_INCREMENTAL: 0
-          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-
-      # Note that `actions-rs/grcov` Action can install `grcov` too,
-      # but can't use faster installation methods yet.
-      # As a temporary experiment `actions-rs/install` Action plugged in here.
-      # Consider **NOT** to copy that into your workflow,
-      # but use `actions-rs/grcov` only
-      - name: Pre-installing grcov
-        uses: actions-rs/install@v0.1
-        with:
-          crate: grcov
-          use-tool-cache: true
-
-      - name: Gather coverage data
-        id: coverage
-        uses: actions-rs/grcov@v0.1
 
       - name: Codecov.io upload
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ${{ steps.coverage.outputs.report }}
+          files: lcov.info
+          fail_ci_if_error: true
