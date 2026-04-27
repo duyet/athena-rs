@@ -7,7 +7,7 @@ authors = ["Duyet <me@duyet.net>"]
 [dependencies]
 anyhow = { version = "1.0.68", features = ["backtrace"] }
 aws-config = "0.53.0"
-aws-sdk-athena = "0.23.0"
+aws-sdk-athena = "1.94.0"
 bat = "0.22.1"
 chrono = "0.4.23"
 clap = { version = "4.1.1", features = ["derive"] }
