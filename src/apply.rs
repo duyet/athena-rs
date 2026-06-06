@@ -25,12 +25,8 @@
 
 use anyhow::{anyhow, bail, Context, Result};
 use aws_sdk_athena::{
-    model::{
-        QueryExecutionContext,
-        QueryExecutionState::{self, *},
-        ResultConfiguration, ResultSet,
-    },
-    output::GetQueryExecutionOutput,
+    operation::get_query_execution::GetQueryExecutionOutput,
+    types::{QueryExecutionContext, QueryExecutionState, ResultConfiguration, ResultSet},
     Client,
 };
 use devtimer::DevTime;
@@ -248,14 +244,14 @@ async fn submit_and_wait(
             .clone();
 
         match state {
-            Queued | Running => {
+            QueryExecutionState::Queued | QueryExecutionState::Running => {
                 sleep(Duration::from_secs(QUERY_POLL_INTERVAL_SECS)).await;
                 info!(
                     "State: {:?}, sleeping {} secs ...",
                     state, QUERY_POLL_INTERVAL_SECS
                 );
             }
-            Cancelled | Failed => {
+            QueryExecutionState::Cancelled | QueryExecutionState::Failed => {
                 error!("State: {:?}", state);
 
                 match get_query_result(&client, query_execution_id.to_string()).await {

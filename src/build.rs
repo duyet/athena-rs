@@ -54,7 +54,9 @@ pub async fn call(args: Build) -> Result<()> {
             }
         }
         None => {
-            if args.no_pretty.unwrap_or_default() {
+            if sql.is_empty() {
+                // Nothing to print for empty output
+            } else if args.no_pretty.unwrap_or_default() {
                 print!("{}", sql);
             } else {
                 pretty_print(sql.as_bytes());
