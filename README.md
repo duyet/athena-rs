@@ -21,7 +21,7 @@ The following command can be used to install athena-rs:
 $ cargo install --git https://github.com/duyet/athena-rs
 $ athena --help
 
-Managing AWS Athena Schemas
+A Rust-based CLI tool for managing AWS Athena schemas using templated SQL with Tera
 
 Usage: athena <COMMAND>
 
