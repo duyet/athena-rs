@@ -14,12 +14,8 @@ jobs:
           - ubuntu-latest
           - macOS-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.64.0 # MSRV
-          profile: minimal
-          override: true
+      - uses: dtolnay/rust-toolchain@1.91.1 # MSRV
 
       - run: cargo test

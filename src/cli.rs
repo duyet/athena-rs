@@ -1,3 +1,8 @@
+//! Command-line interface definitions and argument parsing
+//!
+//! This module defines the CLI structure using `clap` with derive macros.
+//! It provides the main CLI entry point and command definitions for `build` and `apply`.
+
 use clap::Parser;
 
 use crate::{apply::Apply, build::Build};
