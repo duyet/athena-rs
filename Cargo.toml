@@ -17,7 +17,7 @@ rust-version = "1.91.1"
 anyhow = { version = "1.0", features = ["backtrace"] }
 aws-config = "1.5"
 aws-sdk-athena = "1.48"
-bat = "0.23"
+bat = "0.26"
 chrono = "0.4"
 clap = { version = "4.5", features = ["derive"] }
 devtimer = "4.0"
